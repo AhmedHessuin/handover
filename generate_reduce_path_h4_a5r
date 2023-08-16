@@ -1,0 +1,1036 @@
+import os
+# import pandas as pd
+import time
+import json
+unique_id_field=0
+
+names_dict={"المصور": "al_msor",
+            "اخبار اليوم":"akhbar_al_yom",
+            'اخبار اليوم 2': "akhbar_al_yom_2",
+            'الاثنين والدنيا': "al_asnin_w_al_donia"
+            }
+def get_images(test_data_path):
+    '''
+    find image files in test data path
+    :return: list of files found
+    '''
+    files = []
+    containing_folder = set()
+    extensions_found = set()
+    idx=0
+    offset=999999999 # last offset was 999999999
+
+    exts = ['jpg', 'png', 'jpeg', 'JPG', 'tif', "bmp"]
+    print("scanning ",test_data_path)
+    for parent, dirnames, filenames in os.walk(test_data_path):
+        for filename in filenames:
+            for ext in exts:
+                if filename.endswith(ext):
+                    
+                    idx+=1
+                    # files.append(os.path.join(parent, filename))
+                    # file_name_only.append(filename)
+                    # parent_folder.append(parent.split("/")[-1])
+                    full_path=os.path.join(parent, filename)
+                    if "RECYCLE.BIN" in full_path : continue
+                    if "System" in full_path : continue
+                    if "Volume" in full_path : continue
+                    if "Information" in full_path : continue
+                    if "thumb" in full_path : continue
+                    if "THUMB" in full_path : continue
+                    #                    if "المصور" not in full_path: continue
+                    # اخر ساعه العدد 603بتاريخ 15-5-1946
+                    if ( "بتاريخ" in full_path or "بناريخ" in full_path or "يتاريخ" in full_path)  and  "العدد" in full_path:
+                        x=full_path.split('/')[-2]
+                        if "scan" in x.lower():
+                            x=full_path.split("/")[-3]
+                        x=x.replace("اخر ساعه","")
+                        if "بناريخ" in x:
+                            splits=" ".join(x.split('العدد')).split("بناريخ")
+                        elif "يتاريخ" in x:
+                            splits=" ".join(x.split('العدد')).split("يتاريخ")
+                        else:
+                            splits=" ".join(x.split('العدد')).split("بتاريخ")
+                        for split_idx in range(len(splits)):
+                            splits[split_idx]=splits[split_idx].strip().rstrip()
+                            splits[split_idx]=splits[split_idx].replace(" ","")
+                            if "-" in splits[split_idx]:
+                                y=splits[split_idx].split("-")
+                                #            print(y)
+                                #           print(full_path)
+                                '''
+                                if "/home/administrator/data/raw/h4/اخبار اليوم/اخر ساعة/1967/العدد  1719  بتاريخ  4  -  10  1967" in full_path:
+                                    day="4"
+                                    month="10"
+                                    year="1967"
+                                elif "/home/administrator/data/raw/h4/اخبار اليوم/اخر ساعة/1964/العدد  1540  -  بتاريخ  29 - 4 - 1964/" in full_path:
+                                    day="29"
+                                    month="4"
+                                    year="1964"
+
+              
+                                elif "/home/administrator/data/raw/h4/اخبار اليوم/اخر ساعة/1959/العدد  1304  بتاريخ  21  -  10  1959/" in full_path:
+                                    day="21"
+                                    month="10"
+                                    year="1959"
+
+                                elif "/home/administrator/data/raw/h4/اخبار اليوم/اخر ساعة/1959/العدد  1305  بتاريخ  28  -  10  1959/" in full_path:
+                                    day="28"
+                                    month="10"
+                                    year="1959"
+
+                            #    print(full_path)
+                           #     print(y)
+                                '''
+                                if len(y)==2 :
+                                    # print(y[-1])
+                                    day=y[0]
+                                    month=y[-1][0:2]
+                                    year=y[-1][2:]
+                                    print(day,month,year)
+                                # exit()
+                                else:
+                                    day=y[0]
+                                    month=y[1]
+                                    year=y[2]
+                            else:
+                                journal_date=splits[split_idx]
+                                print(journal_date)
+                                if "/home/administrator/data/raw/h4/اخبار اليوم/اخر ساعة/1964/العدد  1540  -  بتاريخ  29 - 4 - 1964/" in full_path:
+                                    exit()
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+
+                    ########
+
+                    elif "العدد" in full_path and   "بتاريخ" in full_path and "-" not in full_path and "_" not in full_path :
+
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+                        c_folder=full_path.split("/")[-1]
+                        temp=c_folder.replace("العدد","").replace("بتاريخ","").replace("  "," ").strip().rstrip()
+                        temp=temp.split(" ")
+                        jounral_date=temp[0]
+                        year=temp[1][0:4]
+                        month=temp[1][4:6]
+                        day=temp[1][6:8]
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+
+                    # print("----------")
+                    elif "العدد" in full_path and   "بتاريخ" in full_path and "-" not in full_path and "_"  in full_path :
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+                        c_folder=full_path.split("/")[-1]
+                        temp=c_folder.replace("العدد","").replace("بتاريخ","").replace("  "," ").strip().rstrip()
+                        temp=temp.split(" ")
+                        # print(temp)
+                        jounral_date=temp[0]
+                        temp[1]=temp[1].split("_")
+                        # print(temp[1])
+                        year=temp[1][-1]
+                        month=temp[1][-2]
+                        day=temp[1][-3
+                        ]
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif "العدد" in full_path and   "بتاريخ" in full_path and "-"  in full_path and "_"  not in full_path :
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+
+                        c_folder=full_path.split("/")[-1]
+                        temp=c_folder.replace("العدد","").replace("-6","- 6").replace("بتاريخ","").replace("pdf","")\
+                            .replace("  "," ").strip().rstrip()\
+                            .replace("  "," ").strip().rstrip()
+                        temp=temp.split(" ")
+                        # print(temp)
+                        jounral_date=temp[0]
+                        # temp[1]=temp[1].split("-")
+                        # print(temp[1])
+                        year=temp[5]
+                        month=temp[3]
+                        day=temp[1]
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif "العدد" in full_path and   "بتاربخ" in full_path and "-"  in full_path and "_"  not in full_path :
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+                        c_folder=full_path.split("/")[-1]
+                        temp=c_folder.replace("العدد","").replace("-6","- 6").replace("بتاربخ","").replace("pdf","") \
+                            .replace("  "," ").strip().rstrip() \
+                            .replace("  "," ").strip().rstrip()
+                        temp=temp.split(" ")
+                        # print(temp)
+                        jounral_date=temp[0]
+                        # temp[1]=temp[1].split("-")
+                        # print(temp[1])
+                        year=temp[5]
+                        month=temp[3]
+                        day=temp[1]
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif "لعدد" in full_path and "العدد" not in full_path and   "بتاريخ" in full_path and "-"  in full_path and "_" not in full_path :
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+                        c_folder=full_path.split("/")[-1]
+                        temp=c_folder.replace("لعدد","").replace("بتاريخ","").replace("  "," ").replace("  "," ").strip().rstrip().replace("-","")
+                        temp=temp.replace("  "," ")
+                        # print(temp)
+                        temp=temp.split(" ")
+
+                        # print(c_folder.replace("لعدد","").replace("بتاريخ","").replace("  "," ").replace("  "," ").strip().rstrip())
+                        # print(temp)
+                        jounral_date=temp[0]
+                        # temp[1]=temp[1].split("_")
+                        # print(temp[1])
+                        # print(temp)
+                        year=temp[3]
+                        month=temp[2]
+                        day=temp[1]
+                        # print(year,month,day,jounral_date)
+
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif "لعدد" in full_path and "العدد" not in full_path and  "بتاربخ" in full_path and "-"  in full_path and "_" not in full_path :
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+                        c_folder=full_path.split("/")[-1]
+                        temp=c_folder.replace("لعدد","").replace("بتاربخ","").replace("  "," ").replace("  "," ").strip().rstrip().replace("-","")
+                        temp=temp.replace("  "," ")
+                        # print(temp)
+                        temp=temp.split(" ")
+
+                        # print(c_folder.replace("لعدد","").replace("بتاريخ","").replace("  "," ").replace("  "," ").strip().rstrip())
+                        # print(temp)
+                        jounral_date=temp[1]
+                        # temp[1]=temp[1].split("_")
+                        # print(temp[1])
+                        # print(temp)
+                        year=temp[4]
+                        month=temp[3]
+                        day=temp[2]
+                        # print(year,month,day,jounral_date)
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif "العدد" in full_path and   "بتاريخ" not in full_path and "-" not in full_path and "_"  in full_path and "Scanjob" not in full_path:
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+
+
+                        c_folder=full_path.split("/")[-1]
+
+                        temp=c_folder.replace("العدد","").replace("اخر ساعة ","").replace("pdf","").replace("19700","1970") \
+                            .replace("يناير","1"). \
+                            replace("فبراير","2"). \
+                            replace("مارس","3"). \
+                            replace("ابريل","4"). \
+                            replace("أبريل","4"). \
+                            replace("مايو","5"). \
+                            replace("يونيو","6"). \
+                            replace("يوليو","7"). \
+                            replace("يونية","6"). \
+                            replace("يونيه","6"). \
+                            replace("يولية","7"). \
+                            replace("يونبو","6"). \
+                            replace("يوليه","7"). \
+                            replace("اغسطس","8"). \
+                            replace("أغسطس","8"). \
+                            replace("ستمبر","9"). \
+                            replace("فبرير","11"). \
+                            replace("سبتمبر","9"). \
+                            replace("أكتوبر","10"). \
+                            replace("اكتوبر","10"). \
+                            replace("نوفمبر","11"). \
+                            replace("توفمبر","11"). \
+                            replace("ديسمبر","12"). \
+                            replace("اول","1"). \
+                            replace("_7 1","17").\
+                            replace("  "," ").strip().rstrip().replace("_","").replace("  "," ")
+                        temp=temp.split(" ")
+                        # if 'ا' in temp:
+                        #     temp.reverse()
+                        temp.reverse()
+                        # print(temp)
+                        jounral_date=temp[3]
+                        # temp[1]=temp[1].split("_")
+                        # print(temp[1])
+                        year=temp[0]
+                        month=temp[1]
+                        day=temp[2]
+
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif "العدد" in full_path and   "بتاريخ" not in full_path and "-" not in full_path and not "_"  in full_path and "Scanjob" not in full_path:
+                        if False:
+                            pass
+                        else:
+
+                            # counter+=1
+                            # print(full_path)
+                            # print(full_path.split("/"))
+                            # print(data[full_path])
+                            c_folder=full_path.split("/")[-1]
+                            # print(c_folder)
+
+
+                            temp=c_folder.split(" ")
+                            # print(temp[1])
+
+                            jounral_date=temp[1]
+                            # # temp[1]=temp[1].split("_")
+                            # # print(temp[1])
+                            year=full_path.split("/")[-2]
+                            month="-1"
+                            day="-1"
+
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                        # print(new_mapper[full_path])
+                            # print("----------")
+                    elif "العدد" in full_path and "Scanjob" in full_path:
+
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+                        c_folder=full_path.split("/")[-2]
+
+
+                        temp=c_folder.split(" ")
+
+                        jounral_date=temp[1]
+                        year=full_path.split("/")[-3]
+                        month="-1"
+                        day="-1"
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+                        # print(new_mapper[full_path])
+                        # print("----------")
+                    elif is_int(full_path.split("/")[-1])  and is_int(full_path.split("/")[-2]) and "Scanjob" not in full_path:
+                        # counter+=1
+                        # print(full_path)
+                        # print(full_path.split("/"))
+                        # print(data[full_path])
+
+                        jounral_date=full_path.split("/")[-1]
+                        year=full_path.split("/")[-2]
+                        month="-1"
+                        day="-1"
+
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+                        # print(new_mapper[path])
+                        # print("----------")
+
+###
+
+                    elif "العدد" in full_path and "_" in full_path and ("العدد" in full_path.split("/")[-2] and "_" in full_path.split("/")[-2])  :
+                        x=full_path.split('/')[-2]
+                        if "scan" in x.lower():
+                            x=full_path.split("/")[-3]
+                        x=x.replace("اخر ساعه","")
+
+
+                        splits=" ".join(x.split('العدد')).split("بتاريخ")[0].strip().rstrip().split("_")
+                        if len(splits)==2:
+                            splits=" ".join(x.split('العدد')).split("بتاريخ")[0].strip().rstrip() \
+                                .replace("يناير","_1_"). \
+                                replace("فبراير","_2_"). \
+                                replace("مارس","_3_"). \
+                                replace("ابريل","_4_"). \
+                                replace("أبريل","_4_"). \
+                                replace("مايو","_5_"). \
+                                replace("يونيو","_6_"). \
+                                replace("يوليو","_7_"). \
+                                replace("يونية","_6_"). \
+                                replace("يونيه","_6_"). \
+                                replace("يولية","_7_"). \
+                                replace("يونبو","_6_"). \
+                                replace("يوليه","_7_"). \
+                                replace("اغسطس","_8_"). \
+                                replace("أغسطس","_8_"). \
+                                replace("ستمبر","_9_"). \
+                                replace("فبرير","_11_"). \
+                                replace("سبتمبر","_9_"). \
+                                replace("أكتوبر","_10_"). \
+                                replace("اكتوبر","_10_"). \
+                                replace("نوفمبر","_11_"). \
+                                replace("توفمبر","_11_"). \
+                                replace("ديسمبر","_12_"). \
+                                split("_")
+
+                            print(splits)
+
+
+                            print(full_path)
+                            if len(splits)!=4:
+                                if len(x.split("_")[-1])==8:
+                                    Journal_issue=(x.split("_")[0].replace("العدد","").strip().rstrip()) #print(x.split("_")[0])
+                                    year=((x.split("_")[-1])[0:4])
+                                    month=((x.split("_")[-1])[4:6])
+                                    day=((x.split("_")[-1])[6:8])
+                                #  print(Journal_issue);exit()
+                            else:
+                                journal_date=splits[0]
+                                day=splits[1]
+                                month=splits[2]
+                                year=splits[3]
+                        #                           print("done");exit()
+                        #
+
+                        else:
+                            print(full_path)
+                            print(splits)
+                            Journal_issue= splits[0]
+
+
+                            day=splits[1]
+                            # print(splits)
+                            #print(full_path)
+                            month=-1
+                            year=splits[2]
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month ,# month الشهر
+                            "year": year, # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+
+
+
+
+                    elif "العدد" in full_path:
+                        x=full_path.split('/')[-2]
+                        if "scan" in x.lower():
+                            x=full_path.split("/")[-3]
+                        x=x.replace("اخر ساعه","")
+                        splits=" ".join(x.split('العدد')).split("بتاريخ")
+                        for split_idx in range(len(splits)):
+                            splits[split_idx]=splits[split_idx].strip().rstrip()
+                            splits[split_idx]=splits[split_idx].replace(" ","")
+                            journal_date=splits[split_idx]
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": -1, # day اليوم
+                            "month":-1 ,# month الشهر
+                            "year": full_path.split('/')[-2], # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                    else:
+
+                        x=full_path.split('/')[-2]
+                        if "scan" in x.lower():
+                            x=full_path.split("/")[-3]
+                        #                       print(x,"hoppppppppa")
+                        year=x[0:4]
+                        month=x[4:6]
+                        day=x[6:8]
+                        journal_date=-1
+                        dict_structure={
+                            #/home/administrator/data/raw/h1/
+
+                            "containing folder":full_path.split('/')[-2], # the name of the folder contain the image "JPG" and other like
+                            "data_batch":full_path.split('/')[5], # the batch like h1
+                            "Journal_issue":journal_date, #Journal_issue عدد المجله
+                            "day": day, # day اليوم
+                            "month":month, #:-1 ,# month الشهر
+                            "year": year, #full_path.split('/')[-2], # year السنه
+                            "batch":full_path.split('/')[-7],# batch  الباتش
+                            "full_path":full_path , # full_path of the image ( abs path )
+                            "jpg_folder":"/".join(full_path.split('/')[0:-1]) , # full_path of the image ( abs path )
+                            "image name":full_path.split('/')[-1] , # only the name of the image with it's ext
+                            "ext":full_path.split('.')[-1] , # extension of the image [jpg, ... ]
+                            "magz_name":names_dict[full_path.split('/')[6]] ,#
+                            "Unique_id":f"{idx+offset}" , # extension of the image [jpg, ... ]
+                        }
+                        files.append(dict_structure)
+                        containing_folder.add(dict_structure["containing folder"])
+                        extensions_found.add(dict_structure["ext"])
+
+                    #                    if "Scanjob_14533" in full_path:print(full_path);print(dict_structure);exit()
+
+                    break
+    print('Find {} images'.format(len(files)))
+    return files,containing_folder,extensions_found
+
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
+def get_statistics(paths_dict,containing_folders_keys,found_extensions_keys):
+    '''
+    ---
+{'JPG', 'Cover', 'Jpg', 'TIFF', 'cover', 'jpg', 'COVER'}
+{'h2', 'JPG', 'TIFF', 'ـJPG', 'jpg', 'COVER'}
+{'jpg', 'JPG'}
+{'png', 'png'}
+
+    :param paths_dict:
+    :return:
+    '''
+
+    found_containing_folders={}
+    for i in containing_folders_keys:
+        found_containing_folders.setdefault(i,[])
+    found_ext={}
+    for i in found_extensions_keys:
+        found_ext.setdefault(i,[])
+
+    for path_dict in paths_dict:
+        found_ext[path_dict['ext']].append(path_dict)
+        found_containing_folders[path_dict['containing folder']].append(path_dict)
+
+    return found_containing_folders,found_ext
+
+def get_valid_jpg_paths(paths_dict):
+    valid_paths=[]
+    invalid_paths=[]
+    for path_dict in paths_dict:
+
+        if  True:#'jpg' in path_dict["containing folder"].lower():
+            if is_int(path_dict["year"]) and is_int(path_dict["month"]) \
+                    and is_int(path_dict["day"]) and is_int(path_dict["Journal_issue"]):
+                valid_paths.append(path_dict)
+            else:
+                invalid_paths.append(path_dict)
+        else:
+            invalid_paths.append(path_dict)
+    return valid_paths,invalid_paths
+
+def handle_invalid_images_in_h1(paths_dict):
+    structure_dict={11:[-4],12:[-4,-5],13:[-4,-5,-6],14:[-7,-6,-5]}
+    # structure len-1 ==11 -4 year hia btnzl kol yom atnin  3add 5as # special edition
+    # structure len-1 ==12 -4 month -5 year 3add tzkari # special edition
+    # structure len-1 ==13 -4 day -5 month -6 year
+    # structure len-1 ==14 -4 3add -5 day -6 month -7 year
+    for i in paths_dict:
+        splits=i["full_path"].split('/')
+        for key in structure_dict:
+            if len(splits)-1 == key:
+                for val in structure_dict[key]:
+                    if is_int(splits[val]):
+                        pass
+                    else:
+                        print("failed")
+
+                if key ==11:
+                    i["year"]=splits[-4]
+                    i["month"]="-1"
+                    i["day"]="-1"
+                    #-3
+                    i["Journal_issue"]=-1 # عدد خاص هنا القاهرة
+
+                elif key == 12 :
+                    i["year"]=splits[-5]
+                    i["month"]=splits[-4]
+                    i["day"]="-1"
+                    #-3
+                    i["Journal_issue"]=-1 # عدد تذكاري -3
+
+                elif key ==13:
+                    i["year"]=splits[-6]
+                    i["month"]=splits[-5]
+                    i["day"]=splits[-4]
+                    #-3
+                    i["Journal_issue"]=-1 # عدد تذكاري-هيكل كلمة لا تموت
+
+                elif key ==14:
+                    i["year"]=splits[-7]
+                    i["month"]=splits[-6]
+                    i["day"]=splits[-5]
+                    i["Journal_issue"]=splits[-4]
+
+    print("fixed ",paths_dict[0])
+    return paths_dict
+
+def get_number_of_magaz(paths_dict):
+    unique_path_to_jpg=set()
+    magz_dictionary={}
+    for path_dict in paths_dict:
+        unique_path_to_jpg.add(path_dict["jpg_folder"]) # this is the path till /JPG
+        magz_dictionary.setdefault(path_dict["jpg_folder"],[])
+        magz_dictionary[path_dict["jpg_folder"]].append(path_dict)
+    # for key in unique_path_to_jpg:
+    #     magz_dictionary.setdefault(key,[])
+    #     for path_dict in paths_dict:
+    #         if key == "/".join(path_dict["full_path"].split("/")[0:-1]):
+    #             magz_dictionary[key].append(path_dict)
+
+    return len(unique_path_to_jpg),magz_dictionary
+def create_mapper_reduce_to_real(paths_dict):
+    mapper_real_reduced={}
+    for path_dict in paths_dict:
+        mapper_real_reduced[path_dict["jpg_folder"]]=f"{path_dict['data_batch']}_._{path_dict['magz_name']}" \
+                                                     f"/{path_dict['Unique_id']}" \
+                                                     f"_._{path_dict['year']}" \
+                                                     f"_._{path_dict['month']}_._{path_dict['day']}" \
+                                                     f"_._{path_dict['Journal_issue']}"
+    # with open('mapper_real_reduced.txt', 'w') as file:
+    #     file.write(str(mapper_real_reduced))
+
+    # df = pd.DataFrame.from_dict(mapper_real_reduced,orient='index')
+    # df.to_excel('reduce_to_real_new_h4_a5r_sa3a.xlsx', index=True)
+    with open("reduced_to_real_new_h4_a5r_sa3a_ali_start.json", "w") as outfile:
+        json.dump(mapper_real_reduced, outfile)
+    return mapper_real_reduced
+
+
+def create_mapper_reduce_to_real_invalid(paths_dict):
+    mapper_real_reduced={}
+    for path_dict in paths_dict:
+        mapper_real_reduced[path_dict["jpg_folder"]]=f"{path_dict['data_batch']}_._{path_dict['magz_name']}" \
+                                                     f"/{path_dict['Unique_id']}" \
+                                                     f"_._{path_dict['year']}" \
+                                                     f"_._{path_dict['month']}_._{path_dict['day']}" \
+                                                     f"_._{path_dict['Journal_issue']}"
+    # with open('mapper_real_reduced.txt', 'w') as file:
+    #     file.write(str(mapper_real_reduced))
+
+    # df = pd.DataFrame.from_dict(mapper_real_reduced,orient='index')
+    # df.to_excel('reduce_to_real_new_h4_a5r_sa3a.xlsx', index=True)
+    with open("invalid_mapper_real_reduced_h4_a5r_sa3a_ali_start.json", "w") as outfile:
+        json.dump(mapper_real_reduced, outfile)
+    return mapper_real_reduced
+
+
+
+def create_mapper_jpg_folder_group(paths_dict):
+
+    write_dict={}
+    for key in paths_dict.keys():
+        write_dict[key]=[]
+        for val in paths_dict[key]:
+            write_dict[key].append(val["full_path"])
+    # df = pd.DataFrame.from_dict(dict([(key, pd.Series(value)) for key, value in write_dict.items()]))
+    # df.to_excel('reduce_to_containing_real_images_h4.xlsx', index=False)
+
+
+
+####Stage 2######
+
+def get_url_path(url="http://192.168.1.99:7006/",input_full_path=""):
+    input_full_path="/".join(input_full_path.split("/")[5:])
+
+    return url+input_full_path
+
+def get_file_name(input_full_path):
+    return input_full_path.split("/")[-1].split('.')[0]
+
+def get_id():
+    #time.sleep(pow(10,-9))
+    #id=time.time_ns()
+    #unique_id_field=0
+    
+    return -1
+
+def write_json(input_full_path):
+    url_path=get_url_path('http://192.168.1.99:7006/',input_full_path)
+    file_name=get_file_name(input_full_path)
+    json_dict={
+        "id":get_id(),
+        "data":{
+            "filename":file_name,
+            "image":url_path
+
+        }
+
+    }
+    return json_dict
+
+
+#unique_id_field=0
+#unique_id_field=0
+##########
+if __name__ == '__main__':
+    stages=[1]
+    if 1 in stages:
+        # data_path_h1="/home/administrator/data/raw/h1/"
+        data_path_h1="/home/administrator/data/raw/h4/اخبار اليوم"
+        paths_h1,containing_folder_h1,extensions_found_h1=(get_images(data_path_h1))
+        # paths_h2,containing_folder_h2,extensions_found_h2=get_images(data_path_h2)
+        print("-sample of paths-")
+        print(paths_h1[0])
+        # print(paths_h2[0])
+        print("-sample of containing folders-")
+        print(containing_folder_h1)
+        # print(containing_folder_h2)
+        print("-sample of extension found -")
+        print(extensions_found_h1)
+        # print(extensions_found_h2)
+        h1_h2_containing_folder=containing_folder_h1#|containing_folder_h2
+        h1_h2_extensions_found=extensions_found_h1#|extensions_found_h2
+        stat_h1,ext_h1=get_statistics(paths_h1,h1_h2_containing_folder,h1_h2_extensions_found)
+        # stat_h2,ext_h2=get_statistics(paths_h2,h1_h2_containing_folder,h1_h2_extensions_found)
+
+        print('h1 containing folders')
+        # for key in stat_h1.keys():
+        #     print(key)
+        #     print(len(stat_h1[key]))
+        #if 'jpg' not in key.lower() and len(stat_h1[key])>0:
+        #    print(stat_h1[key][0])
+        # print("----")
+
+        # print("h2 containing folders")
+        # for key in stat_h2.keys():
+        #     print(key)
+        #     print(len(stat_h2[key]))
+        #     if 'jpg' not in key.lower() and len(stat_h1[key])>0:
+        #         print(stat_h1[key][0])
+        #     print("----")
+
+
+        # print('h1 ext')
+        # for key in ext_h1.keys():
+        #     print(key)
+        #     print(len(ext_h1[key]))
+
+        # print("h2 ext")
+        # for key in ext_h2.keys():
+        #     print(key)
+        #     print(len(ext_h2[key]))
+
+
+        valid_paths_h1,invalid_paths_h1=get_valid_jpg_paths(paths_h1)
+        # valid_paths_h2,invalid_paths_h2=get_valid_jpg_paths(paths_h2)
+
+        # print("invalid h1 ")
+        # print(len(invalid_paths_h1))
+        #print(invalid_paths_h1[0:1])
+
+        # print("invalid h1 fixed")
+
+        #invalid_paths_h1_fixed=handle_invalid_images_in_h1(invalid_paths_h1)
+        #print(invalid_paths_h1_fixed[0:1])
+
+        # print("invalid h2 ")
+        # print(invalid_paths_h2[0:5])
+        # print("valid h1 ")
+        # print(len(valid_paths_h1))
+        # print(valid_paths_h1[-5:])
+        print(len(invalid_paths_h1))
+        print(invalid_paths_h1[0:3])
+        print("final check h1 ")
+        #        print(valid_paths_h1)
+        x1,y1=get_valid_jpg_paths(valid_paths_h1)
+
+        #x2,y2=get_valid_jpg_paths(invalid_paths_h1_fixed)
+        print(len(x1),len(y1))
+
+        #print(len(x2),len(y2))
+
+        # create_mapper(x1+x2)
+        number_of_magz,magz_dict=get_number_of_magaz(x1)
+        for key in magz_dict:
+            print(key)
+            print(magz_dict[key][0])
+            break
+        print(number_of_magz)
+        mapper_real_reduced=create_mapper_reduce_to_real(x1)
+
+        mapper_real_reduced=create_mapper_reduce_to_real_invalid(invalid_paths_h1)
+        create_mapper_jpg_folder_group(magz_dict)
+        # print("valid h2 ")
+        # print(valid_paths_h2[0:5])
+
+    # if 2 in stages and 1 in stages:
+    #     output_path_images_json="./label_studio_input"
+    #     os.system(f"mkdir -p {output_path_images_json}")
+    #     for jpg_folder_path in magz_dict:
+    #         images_lst=[]
+    #         for path_dict in magz_dict[jpg_folder_path]:
+    #             images_lst.append(write_json(path_dict['full_path']))
+    #             os.system(f"mkdir -p {output_path_images_json}/{mapper_real_reduced[jpg_folder_path]}")
+    #         out_file = open(f"{output_path_images_json}/{mapper_real_reduced[jpg_folder_path]}/images.json", "w")
+    #         json.dump(images_lst,out_file)
+
+
+'''
+invalid h1 
+[{'containing folder': 'JPG', 'Journal_issue': '4542-من الملك عبدالعزيز الي الملك عبدالله', 'day': '4542', 'month': '26', 'year': '10', 'batch': '2011', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/10/26/4542/4542-من الملك عبدالعزيز الي الملك عبدالله/JPG/007.jpg', 'image name': '007.jpg', 'ext': 'jpg'},
+ {'containing folder': 'JPG', 'Journal_issue': '4542-من الملك عبدالعزيز الي الملك عبدالله', 'day': '4542', 'month': '26', 'year': '10', 'batch': '2011', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/10/26/4542/4542-من الملك عبدالعزيز الي الملك عبدالله/JPG/008.jpg', 'image name': '008.jpg', 'ext': 'jpg'},
+  {'containing folder': 'JPG', 'Journal_issue': '4542-من الملك عبدالعزيز الي الملك عبدالله', 'day': '4542', 'month': '26', 'year': '10', 'batch': '2011', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/10/26/4542/4542-من الملك عبدالعزيز الي الملك عبدالله/JPG/001.jpg', 'image name': '001.jpg', 'ext': 'jpg'}, 
+  {'containing folder': 'JPG', 'Journal_issue': '4542-من الملك عبدالعزيز الي الملك عبدالله', 'day': '4542', 'month': '26', 'year': '10', 'batch': '2011', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/10/26/4542/4542-من الملك عبدالعزيز الي الملك عبدالله/JPG/015.jpg', 'image name': '015.jpg', 'ext': 'jpg'}, 
+  {'containing folder': 'JPG', 'Journal_issue': '4542-من الملك عبدالعزيز الي الملك عبدالله', 'day': '4542', 'month': '26', 'year': '10', 'batch': '2011', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/10/26/4542/4542-من الملك عبدالعزيز الي الملك عبدالله/JPG/005.jpg', 'image name': '005.jpg', 'ext': 'jpg'}]
+invalid h2 
+[{'containing folder': 'JPG', 'Journal_issue': '00129', 'day': '$RSLNST1', 'month': 'S-1-5-21-1202660629-1123561945-725345543-48907', 'year': '$RECYCLE.BIN', 'batch': 'h2', 'full_path': '/home/administrator/data/raw/h2/$RECYCLE.BIN/S-1-5-21-1202660629-1123561945-725345543-48907/$RSLNST1/00129/JPG/0055.jpg', 'image name': '0055.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '00129', 'day': '$RSLNST1', 'month': 'S-1-5-21-1202660629-1123561945-725345543-48907', 'year': '$RECYCLE.BIN', 'batch': 'h2', 'full_path': '/home/administrator/data/raw/h2/$RECYCLE.BIN/S-1-5-21-1202660629-1123561945-725345543-48907/$RSLNST1/00129/JPG/0179.jpg', 'image name': '0179.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '00129', 'day': '$RSLNST1', 'month': 'S-1-5-21-1202660629-1123561945-725345543-48907', 'year': '$RECYCLE.BIN', 'batch': 'h2', 'full_path': '/home/administrator/data/raw/h2/$RECYCLE.BIN/S-1-5-21-1202660629-1123561945-725345543-48907/$RSLNST1/00129/JPG/0113.jpg', 'image name': '0113.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '00129', 'day': '$RSLNST1', 'month': 'S-1-5-21-1202660629-1123561945-725345543-48907', 'year': '$RECYCLE.BIN', 'batch': 'h2', 'full_path': '/home/administrator/data/raw/h2/$RECYCLE.BIN/S-1-5-21-1202660629-1123561945-725345543-48907/$RSLNST1/00129/JPG/0240.jpg', 'image name': '0240.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '00129', 'day': '$RSLNST1', 'month': 'S-1-5-21-1202660629-1123561945-725345543-48907', 'year': '$RECYCLE.BIN', 'batch': 'h2', 'full_path': '/home/administrator/data/raw/h2/$RECYCLE.BIN/S-1-5-21-1202660629-1123561945-725345543-48907/$RSLNST1/00129/JPG/0233.jpg', 'image name': '0233.jpg', 'ext': 'jpg'}]
+valid h1 
+[{'containing folder': 'JPG', 'Journal_issue': '4550', 'day': '21', 'month': '12', 'year': '2011', 'batch': 'باتش 5 المصور 1', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/12/21/4550/JPG/036.jpg', 'image name': '036.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '4550', 'day': '21', 'month': '12', 'year': '2011', 'batch': 'باتش 5 المصور 1', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/12/21/4550/JPG/051.jpg', 'image name': '051.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '4550', 'day': '21', 'month': '12', 'year': '2011', 'batch': 'باتش 5 المصور 1', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/12/21/4550/JPG/059.jpg', 'image name': '059.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '4550', 'day': '21', 'month': '12', 'year': '2011', 'batch': 'باتش 5 المصور 1', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/12/21/4550/JPG/007.jpg', 'image name': '007.jpg', 'ext': 'jpg'}, {'containing folder': 'JPG', 'Journal_issue': '4550', 'day': '21', 'month': '12', 'year': '2011', 'batch': 'باتش 5 المصور 1', 'full_path': '/home/administrator/data/raw/h1/المصور/باتش 5 المصور 1/2011/12/21/4550/JPG/057.jpg', 'image name': '057.jpg', 'ext': 'jpg'}]
+valid h2 
+[]
+administrator@Ubuntu22:~/magz_scripts$ 
+
+'''
