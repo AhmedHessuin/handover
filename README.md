@@ -107,3 +107,78 @@ done recognition
 ```
 so it started and didn't find any messing data so it's DONE :D
 
+# Step 5 download the Titles to the MCIT 2 machine
+check steps.txt in the MCIT 2 machine 
+
+# Step 6 upload the titles from the MCIT 2 machine
+check steps.txt in the MCIT 2 machine 
+
+# Step 7 Delivery 
+```sh
+cd ~/magz/Deliveries
+```
+
+run the `run_mul_latest.py` 
+modify 
+```py
+delivery_date="16-8-2023" # to be the date of the delivery
+```
+```py
+json_path = "reduced_to_real_new.json" # make it the json you generated for reduce path
+json_path_2 = "reduced_to_real_new_h4.json" # you can comment it 
+json_path_3 = "invalid_reduced_to_real_new_h4_fixed.json" # you can comment it 
+json_path_4 = "reduce_path_h4_a5r_sa3a_new_paths_from_xml_and_script.json" # you can comment it 
+dictionary_real_to_reduce = read_reduced_path(json_path)| read_reduced_path(json_path_2)|read_reduced_path(json_path_3) | read_reduced_path(json_path_4) # you can remove all of them and leave read_reduced_path(json_path) ## note that | order maters a lot in dict
+# so take care 
+```
+this will generate deliver like 
+```
+a5rsa3a_delivery_16-8-2023/
+```
+delivery contain everything except the modification they asked and Corrupted folders may apper  ( contain -1 in reduce path )
+this will generate log files while running like 
+```
+log_update_error_a5rsa3a_16-8-2023_h4_اخبار\ اليوم_اخر\ ساعة.txt  # contain the start and if error happend will tills you
+log_update_delivery_counter_a5rsa3a_16-8-2023_h4_اخبار\ اليوم_اخر\ ساعة.txt # this count the images done
+```
+run 
+```
+ cd a5rsa3a_delivery_16-8-2023/
+ find . -maxdepth 1 -name "*-1*"
+```
+and move all dirs listed into trash dir with same name as the delivery folder but with extra flag
+example 
+```
+missed_from_14-8-2023_-1
+```
+then count the images found in pdf images to substract it from the total count 
+
+
+run `magz_copy_editions_delivery.py`
+this will copy only the dirs that passed all the run ( this include dirs contain -1 so remove it before runing this script )
+modify
+in paths and output paths
+```
+in_path = "/home/administrator/data/magz/Deliveries/alasninWaldonia_delivery_16-8-2023/"
+out_path = "/home/administrator/data/magz/Deliveries/magazines_alasninWaldonia_delivery_16-8-2023/"
+```
+run `fix_json_part2.py`
+this will modify the english numbers to hindi and the way the Title field is represented 
+modify
+```py
+jsons_dir=[
+   "./magazines_alasninWaldonia_delivery_16-8-2023/Content",
+   "./magazines_almusawar_delivery_16-8-2023/Content",
+    
+]
+
+```
+
+
+
+
+
+
+
+
+
