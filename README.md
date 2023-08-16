@@ -75,3 +75,35 @@ python check_log.py # modify the log_path inside this script
 ** So Far we generated the segmentations and the Titles OCR **
 
 # Step 4 OCR for paragraphs
+run `automate3_mul_paragrpahs.py`
+modify only the paths 
+example 
+```py
+  for dir in [
+"/home/administrator/data/magz/OCR/31-7-2023/h1/المصور/باتش 5 المصور 2/Paragraph/"
+```
+this will run on all dirs in this list and generate OCR dir 
+this will loop 5 times to make sure no txt is missed 
+```py
+python automate3_mul_paragrpahs.py
+```
+this will generate log while runing 
+example
+```py
+log_update_par_0_11-8-2023 
+log_update_par_1_11-8-2023 
+log_update_par_2_11-8-2023 
+log_update_par_3_11-8-2023 
+log_update_par_4_11-8-2023
+```
+best case when you see start and done 
+
+example
+```
+start ocr 
+
+ recognition start /home/administrator/data/magz/OCR/11-8-2023/h4/اخبار اليوم/اخر ساعة/Paragraph
+done recognition 
+```
+so it started and didn't find any messing data so it's DONE :D
+
