@@ -22,5 +22,24 @@ take the asr data from hasan and follow the step in the MCIT 2 machine
 steps.txt
 the first section to upload the ASR
 
+# Step 3 Process the ASR 
+on the server machine 
+go to 
+```cd ~/magz_scripts/test_upload_h4 ```
 
+run `automate3_mul_latest_version.py`
+
+modify 
+the `folder_date` to be the folder date you want to Process inside `~/data/magz/ASR`
+the `hard_folder` to be the subdirs inside the dare dire in the ASR path
+Example
+```py
+folder_date="9-8-2023" # this is a folder  inside ~/data/magz/ASR
+hard_folders={
+"h4/اخبار اليوم":
+["اخر ساعة"]
+}```
+this will generate dir in `~/data/magz/OCR/{folder_dare}/{hard_folder}/{hard_folder[values]}`
+example
+```~/data/magz/OCR/{folder_dare}/h4/اخبار اليوم/اخر ساعة```
 
