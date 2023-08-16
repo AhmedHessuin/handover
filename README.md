@@ -32,14 +32,46 @@ run `automate3_mul_latest_version.py`
 modify 
 the `folder_date` to be the folder date you want to Process inside `~/data/magz/ASR`
 the `hard_folder` to be the subdirs inside the dare dire in the ASR path
+the reduced json paths 
+```py
+        data_path=f"/home/administrator/data/magz/ASR/{folder_date}/{hard_name}/{internal_batch_name}"
+        json_path_h4_a5bar1="reduced_to_real_new_h4_a5r_sa3a.json" # you can comment it 
+        json_path_h4="reduced_to_real_new_h4.json" # you can comment it
+        json_path_h4_invalid_fixed="invalid_reduced_to_real_new_h4_fixed.json"# you can comment it 
+        json_path="reduced_to_real_new.json" # change it to the json generatted from step 1
+        
+        ocr_output_path=f"/home/administrator/data/magz/OCR/{folder_date}/{hard_name}/{internal_batch_name}" #"/home/administrator/data/magz/OCR/17-7-2023/h1/المصور/باتش 5 المصور 2"
+
+        mapper_real_to_reduce_4=read_reduced_path(json_path_h4_a5bar1) # you can comment it
+        mapper_real_to_reduce_1=read_reduced_path(json_path) # leave it as it is 
+        mapper_real_to_reduce_2=read_reduced_path(json_path_h4) # you can comment it
+        mapper_real_to_reduce_3=read_reduced_path(json_path_h4_invalid_fixed) # you can comment it
+
+        mapper_real_to_reduce=mapper_real_to_reduce_4|mapper_real_to_reduce_2|mapper_real_to_reduce_1|mapper_real_to_reduce_3 # remove all of them except mapper_real_to_reduce_1 ### note that the | order matters a lot so take care
+
+```
 Example
 ```py
 folder_date="9-8-2023" # this is a folder  inside ~/data/magz/ASR
 hard_folders={
 "h4/اخبار اليوم":
 ["اخر ساعة"]
-}```
+}
+```
 this will generate dir in `~/data/magz/OCR/{folder_dare}/{hard_folder}/{hard_folder[values]}`
 example
-```~/data/magz/OCR/{folder_dare}/h4/اخبار اليوم/اخر ساعة```
+```~/data/magz/OCR/11-8-2023/h4/اخبار اليوم/اخر ساعة```
+this folder contain the reduced paths `Titles Pargraphs Articles ...`
 
+this python generate log file
+example
+```py
+log_update_11-8-2023.txt 
+```
+you can check it with
+```py
+python check_log.py # modify the log_path inside this script          
+```
+** So Far we generated the segmentations and the Titles OCR **
+
+# Step 4 OCR for paragraphs
